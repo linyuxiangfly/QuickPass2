@@ -9,11 +9,13 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sdxp100.ReadListener;
 import com.sdxp100.Sdxp100;
 import com.sdxp100.Sdxp100Device;
+import com.sdxp100.pck.CallBackListener;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
 
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private int index=0;
 
     private Button button1 = null;
+    private TextView text1=null;
     private SerialPort mSerialPort = null;
     private Sdxp100 sdxp = null;
 
@@ -43,13 +46,20 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             mSerialPort = new SerialPort(new File("/dev/ttyUSB0"), 115200, 0);
-            sdxp = new Sdxp100(mSerialPort);
+            sdxp = new Sdxp100(mSerialPort, new CallBackListener() {
+                @Override
+                public void timeOut(InfoArea infoArea) {
+                    showInfo("超时");
+                }
+            });
 //            sdxp.checkState();
 //            sdxp.reg();
             sdxp.balance();
         } catch (Exception e) {
             showInfo(e.getMessage());
         }
+
+        text1=(TextView)this.findViewById(R.id.textView);
 
         button1 = (Button) this.findViewById(R.id.button1);
         button1.setOnClickListener(new View.OnClickListener() {
@@ -131,8 +141,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showInfo(String msg) {
-        Toast toast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
-        toast.show();
+        text1.setText(msg);
     }
 
     public byte[] strByt(String str) {

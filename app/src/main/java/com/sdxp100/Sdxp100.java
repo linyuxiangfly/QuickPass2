@@ -1,6 +1,7 @@
 package com.sdxp100;
 
 import com.sdxp100.pck.BalancePackage;
+import com.sdxp100.pck.CallBackListener;
 import com.sdxp100.pck.CheckStatePackage;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
@@ -20,15 +21,24 @@ public class Sdxp100 {
     private SerialPort mSerialPort = null;
     private Sdxp100Device device = null;
 
-    public Sdxp100(SerialPort serialPort){
+    public Sdxp100(SerialPort serialPort,final CallBackListener listener){
         this.mSerialPort=serialPort;
 
         device = new Sdxp100Device(mSerialPort, new ReadListener() {
-
             @Override
             public void onRead(InfoArea infoArea) {
-                infoArea.getAbdata();
-                int a=(int)infoArea.getAbdata()[0]&0xFF;
+                //如果事件存在
+                if(listener!=null){
+                    //获取返回的消息的数据
+                    byte[] abdata=infoArea.getAbdata();
+                    if(abdata!=null){
+                        int len=abdata.length;
+                        //超时指令
+                        if(len>=2 && abdata[0]==(byte)0xBE && abdata[1]==(byte)0xFB){
+                            listener.timeOut(infoArea);
+                        }
+                    }
+                }
 
             }
 
@@ -39,6 +49,7 @@ public class Sdxp100 {
         });
     }
 
+    //查询状态指令
     public void checkState()throws Exception{
         checkState((byte)0,(byte)0,(byte)0x0A);
     }
@@ -56,9 +67,12 @@ public class Sdxp100 {
         sendInfoArea(ia);
     }
 
+    //签到指令
     public void reg()throws Exception{
         reg((byte) 0, (byte) 1, (byte) 0x0A);
     }
+
+    //签到指令
     public void reg(byte p1,byte p2,byte delay)throws Exception{
         InfoArea ia=new InfoArea();
         ia.setType((byte) 0x80);//串口通信方式
@@ -87,9 +101,11 @@ public class Sdxp100 {
         sendInfoArea(ia);
     }
 
+    //结算指令
     public void balance()throws Exception{
         balance((byte)0x0A);
     }
+    //结算指令
     public void balance(byte delay)throws Exception{
         InfoArea ia=new InfoArea();
         ia.setType((byte) 0x80);//串口通信方式
