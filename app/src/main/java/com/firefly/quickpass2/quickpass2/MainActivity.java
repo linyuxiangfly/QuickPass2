@@ -18,6 +18,7 @@ import com.sdxp100.Sdxp100Device;
 import com.sdxp100.pck.CallBackListener;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
+import com.sdxp100.pck.PayResultPackage;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
     private int index=0;
 
     private Button button1 = null;
+    private Button button2 = null;
+    private Button button3 = null;
     private TextView text1=null;
     private SerialPort mSerialPort = null;
     private Sdxp100 sdxp = null;
@@ -56,9 +59,53 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 @Override
+                public void pay(PayResultPackage payResultPackage) {
+                    showInfo("卡号:"+payResultPackage.getCard()+",金额:"+payResultPackage.getMoney());
+                }
+
+                @Override
                 public void state(byte state) {
                     int s=(int)(state&0xFF);
                     showInfo("状态:"+Integer.toBinaryString(s));
+                }
+
+                @Override
+                public void reg(byte[] data,int state) {
+                    String str = "";
+                    for (int i = 0; i < data.length; i++) {
+                        String hex = Integer.toHexString(data[i] & 0xFF);
+                        if (hex.length() == 1) {
+                            hex = '0' + hex;
+                        }
+                        str += hex + " ";
+                    }
+                    showInfo("状态:"+state + ",签到:"+str);
+                }
+
+                @Override
+                public void aid(byte[] data, int state) {
+                    String str = "";
+                    for (int i = 0; i < data.length; i++) {
+                        String hex = Integer.toHexString(data[i] & 0xFF);
+                        if (hex.length() == 1) {
+                            hex = '0' + hex;
+                        }
+                        str += hex + " ";
+                    }
+                    showInfo("状态:"+state + ",aid:"+str);
+                }
+
+                @Override
+                public void pk(byte[] data, int state) {
+                    String str = "";
+                    for (int i = 0; i < data.length; i++) {
+                        String hex = Integer.toHexString(data[i] & 0xFF);
+                        if (hex.length() == 1) {
+                            hex = '0' + hex;
+                        }
+                        str += hex + " ";
+                    }
+                    showInfo("状态:"+state + ",pk:"+str);
                 }
 
                 @Override
@@ -66,9 +113,11 @@ public class MainActivity extends AppCompatActivity {
                     showInfo(exception.getMessage());
                 }
             });
-            sdxp.checkState();
+//            sdxp.checkState();
 //            sdxp.reg();
-            sdxp.balance();
+//            sdxp.updateAid();
+            sdxp.updatePk();
+//            sdxp.balance();
         } catch (Exception e) {
             showInfo(e.getMessage());
         }
@@ -78,68 +127,41 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-//                DataPackage dp=new DataPackage();
-//                dp.setStx((byte) 0x02);
-//                dp.setEtx((byte) 0x3);
-//                dp.setInfoAreaLen(0x0E);
-//                dp.setInfoArea();
-//                try {
-//                    device.sendDataPackage(dp);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                String dataStr = "02 00 00 00 2E 80 00 00 00 24 00 00 0A 00 00 BE 40 00 00 00 1E 9F 02 06 00 00 00 00 00 02 9A 03 14 11 07 5F 21 03 11 55 12 9C 01 00 9F 41 04 00 00 16 40 58 03";
-//                byte[] data = strByt(dataStr);
-//
-//                if (mSerialPort != null) {
-//                    OutputStream os = mSerialPort.getOutputStream();
-//                    InputStream is = mSerialPort.getInputStream();
-//
-//                    if (os != null) {
-//                        try {
-//                            os.write(data);
-//                            os.flush();
-//                        } catch (IOException e) {
-//                            showInfo(e.getMessage());
-//                        }
-//                    }
-
-//                    try {
-//                        Thread.sleep(200);
-//                    } catch (InterruptedException e) {
-//                        showInfo(e.getMessage());
-//                    }
-//
-//                    if (is != null) {
-//                        try {
-//                            byte[] buffer = new byte[4096];
-//                            int readLen = 0;
-//                            readLen = is.read(buffer);
-//
-//                            String str = "";
-//                            for (int i = 0; i < readLen; i++) {
-//                                String hex = Integer.toHexString(buffer[i] & 0xFF);
-//                                if (hex.length() == 1) {
-//                                    hex = '0' + hex;
-//                                }
-//                                str += hex + " ";
-//                            }
-//
-//                            showInfo(str);
-//                        } catch (IOException e) {
-//                            showInfo(e.getMessage());
-//                        }
-//                    }
-                    try {
-                        index++;
-
-                        sdxp.pay(index,12345,new Date(),(byte)0x02);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    index++;
+                    sdxp.pay(index, 1);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-//            }
+            }
+        });
 
+        button2 = (Button) this.findViewById(R.id.button2);
+        button2.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                try {
+                    index++;
+                    sdxp.pay(index,2);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        button3 = (Button) this.findViewById(R.id.button3);
+        button3.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                try {
+                    index++;
+                    sdxp.pay(index,3);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         });
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);

@@ -9,6 +9,7 @@ import com.sdxp100.pck.CheckStatePackage;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
 import com.sdxp100.pck.PayPackage;
+import com.sdxp100.pck.PayResultPackage;
 import com.sdxp100.pck.RegPackage;
 import com.utils.CheckUtil;
 import com.utils.Convert;
@@ -58,6 +59,65 @@ public class Sdxp100 {
                 if(len>=3 && abdata[1]==(byte)0x90 && abdata[2]==(byte)0x00){
                     listener.state(abdata[0]);
                 }
+                //交易成功，完成交易，D0标签，01长度，03表示交易完成
+                if(len>=3 && abdata[0]==(byte)0xD0){
+                    //返回签到报文
+                    if(abdata[1]==0x01 && abdata[2]==0x03){
+                        if(len>=6 && abdata[3]==(byte)0xD1 && abdata[4]==(byte)0x81){
+                            //后面数据长度
+                            int l=(int)(abdata[5]&0xFF);
+                            //如果数据等于前面长度（5）+数据长度l+状态（2）
+                            if(len>=6+l+2){
+                                //复制数据到数组
+                                //###############################待解释数据##########################################################
+                                byte[] d=new byte[l];
+                                for (int i=0;i<l;i++){
+                                    d[i]=abdata[6+i];
+                                }
+
+                                //交易成功的返回状态  若交易异常则返回其他的状态
+                                short s=Convert.getShort(abdata,6+l);
+
+                                //把返回数据封装成对象
+                                PayResultPackage payResultPackage=new PayResultPackage();
+                                //#########################################################################################
+                                //交易成功
+                                listener.pay(payResultPackage);
+                            }
+                        }
+                    }
+                }
+                //签到返回Type-length-value（TLV）格式
+                if(len>=3 && abdata[0]==(byte)0xD2){
+                    //返回签到报文
+                    if(abdata[1]==0x01){
+                        if(len>=5){
+                            if(abdata[3]==(byte)0xD1){
+                                //后面数据长度
+                                int l=(int)(abdata[4]&0xFF);
+                                //如果数据等于前面长度（5）+数据长度l+状态（2）
+                                if(len>=5+l+2){
+                                    //复制数据到数组
+                                    byte[] d=new byte[l];
+                                    for (int i=0;i<l;i++){
+                                        d[i]=abdata[5+i];
+                                    }
+
+                                    //交易成功的返回状态  若交易异常则返回其他的状态
+                                    short s=Convert.getShort(abdata,5+l);
+                                    //签到
+                                    if(abdata[2]==0x01){
+                                        listener.reg(d,(int)(s&0xFFFF));
+                                    }else if(abdata[2]==0x02){
+                                        listener.aid(d,(int)(s&0xFFFF));
+                                    }else if(abdata[2]==0x03){
+                                        listener.pk(d,(int)(s&0xFFFF));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -94,7 +154,7 @@ public class Sdxp100 {
 
     //查询状态指令
     public void checkState()throws Exception{
-        checkState((byte)0,(byte)0,(byte)0x0A);
+        checkState((byte) 0, (byte) 0, (byte) 0x0A);
     }
     //查询状态指令
     public void checkState(byte p1,byte p2,byte delay)throws Exception{
@@ -129,6 +189,23 @@ public class Sdxp100 {
         sendInfoArea(ia);
     }
 
+    //更新aid
+    public void updateAid()throws Exception{
+        reg((byte) 02, (byte) 02, (byte) 0x0A);
+    }
+
+    //更新公钥
+    public void updatePk()throws Exception{
+        reg((byte) 02, (byte) 03, (byte) 0x0A);
+    }
+
+    public void pay(int serialNum,int money)throws Exception{
+        pay(serialNum, money, new Date(), (byte) 0x0A);
+    }
+
+    public void pay(int serialNum,int money,Date payDate)throws Exception{
+        pay(serialNum,money,payDate,(byte)0x0A);
+    }
     //支付指令
     public void pay(int serialNum,int money,Date payDate,byte delay)throws Exception{
         InfoArea ia=new InfoArea();
@@ -177,15 +254,15 @@ public class Sdxp100 {
 
         dp.setEtx(Sdxp100Analysis.ETX);
 
-        byte[] d=dp.toByte();
-        String str = "";
-        for (int i = 0; i < d.length; i++) {
-            String hex = Integer.toHexString(d[i] & 0xFF);
-            if (hex.length() == 1) {
-                hex = '0' + hex;
-            }
-            str += hex + " ";
-        }
+//        byte[] d=dp.toByte();
+//        String str = "";
+//        for (int i = 0; i < d.length; i++) {
+//            String hex = Integer.toHexString(d[i] & 0xFF);
+//            if (hex.length() == 1) {
+//                hex = '0' + hex;
+//            }
+//            str += hex + " ";
+//        }
 
         device.sendDataPackage(dp);
     }
