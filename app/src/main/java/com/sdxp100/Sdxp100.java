@@ -1,5 +1,8 @@
 package com.sdxp100;
 
+import android.os.Handler;
+import android.os.Message;
+
 import com.sdxp100.pck.BalancePackage;
 import com.sdxp100.pck.CallBackListener;
 import com.sdxp100.pck.CheckStatePackage;
@@ -18,33 +21,73 @@ import android_serialport_api.SerialPort;
  * Created by Firefly on 2016/2/27.
  */
 public class Sdxp100 {
+    private static final int Msg_InfoArea=0;
+    private static final int Msg_Exception=1;
+
     private SerialPort mSerialPort = null;
     private Sdxp100Device device = null;
+    private CallBackListener listener=null;
+
+    private Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case Msg_InfoArea:
+                    analysis(listener,(InfoArea)msg.obj);
+                    break;
+                case Msg_Exception:
+                    exception(listener,(Exception)msg.obj);
+                    break;
+            }
+            super.handleMessage(msg);
+        }
+    };
+
+    private void analysis(final CallBackListener listener,InfoArea infoArea){
+        //如果事件存在
+        if(listener!=null){
+            //获取返回的消息的数据
+            byte[] abdata=infoArea.getAbdata();
+            if(abdata!=null){
+                int len=abdata.length;
+
+                //超时指令
+                if(len>=2 && abdata[0]==(byte)0xBE && abdata[1]==(byte)0xFB){
+                    listener.timeOut(infoArea);
+                }
+                //状态
+                if(len>=3 && abdata[1]==(byte)0x90 && abdata[2]==(byte)0x00){
+                    listener.state(abdata[0]);
+                }
+            }
+        }
+    }
+
+    private void exception(final CallBackListener listener,Exception exception){
+        //如果事件存在
+        if(listener!=null){
+            listener.exception(exception);
+        }
+    }
 
     public Sdxp100(SerialPort serialPort,final CallBackListener listener){
         this.mSerialPort=serialPort;
+        this.listener=listener;
 
         device = new Sdxp100Device(mSerialPort, new ReadListener() {
             @Override
             public void onRead(InfoArea infoArea) {
-                //如果事件存在
-                if(listener!=null){
-                    //获取返回的消息的数据
-                    byte[] abdata=infoArea.getAbdata();
-                    if(abdata!=null){
-                        int len=abdata.length;
-                        //超时指令
-                        if(len>=2 && abdata[0]==(byte)0xBE && abdata[1]==(byte)0xFB){
-                            listener.timeOut(infoArea);
-                        }
-                    }
-                }
-
+                Message m = new Message();
+                m.what = Msg_InfoArea;
+                m.obj=infoArea;
+                Sdxp100.this.handler.sendMessage(m);
             }
 
             @Override
             public void onException(Exception exception) {
-
+                Message m = new Message();
+                m.what = Msg_Exception;
+                m.obj=exception;
+                Sdxp100.this.handler.sendMessage(m);
             }
         });
     }

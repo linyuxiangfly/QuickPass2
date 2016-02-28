@@ -7,4 +7,10 @@ package com.sdxp100.pck;
 public interface CallBackListener {
     //超时
     public void timeOut(InfoArea infoArea);
+
+    //查询状态
+    public void state(byte state);
+
+    //异常
+    public void exception(Exception exception);
 }

@@ -44,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        text1=(TextView)this.findViewById(R.id.textView);
+        showInfo("");
+
         try {
             mSerialPort = new SerialPort(new File("/dev/ttyUSB0"), 115200, 0);
             sdxp = new Sdxp100(mSerialPort, new CallBackListener() {
@@ -51,15 +54,24 @@ public class MainActivity extends AppCompatActivity {
                 public void timeOut(InfoArea infoArea) {
                     showInfo("超时");
                 }
+
+                @Override
+                public void state(byte state) {
+                    int s=(int)(state&0xFF);
+                    showInfo("状态:"+Integer.toBinaryString(s));
+                }
+
+                @Override
+                public void exception(Exception exception) {
+                    showInfo(exception.getMessage());
+                }
             });
-//            sdxp.checkState();
+            sdxp.checkState();
 //            sdxp.reg();
             sdxp.balance();
         } catch (Exception e) {
             showInfo(e.getMessage());
         }
-
-        text1=(TextView)this.findViewById(R.id.textView);
 
         button1 = (Button) this.findViewById(R.id.button1);
         button1.setOnClickListener(new View.OnClickListener() {
