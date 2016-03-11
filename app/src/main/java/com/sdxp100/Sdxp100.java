@@ -2,8 +2,10 @@ package com.sdxp100;
 
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import com.sdxp100.pck.BalancePackage;
+import com.sdxp100.pck.ByteSerializable;
 import com.sdxp100.pck.CallBackListener;
 import com.sdxp100.pck.CheckStatePackage;
 import com.sdxp100.pck.DataPackage;
@@ -11,6 +13,9 @@ import com.sdxp100.pck.InfoArea;
 import com.sdxp100.pck.PayPackage;
 import com.sdxp100.pck.PayResultPackage;
 import com.sdxp100.pck.RegPackage;
+import com.sdxp100.pck.ReturnTransInfo;
+import com.sdxp100.pck.TransDataPackage;
+import com.sdxp100.pck.TransparentPackage;
 import com.utils.CheckUtil;
 import com.utils.Convert;
 
@@ -24,6 +29,7 @@ import android_serialport_api.SerialPort;
 public class Sdxp100 {
     private static final int Msg_InfoArea=0;
     private static final int Msg_Exception=1;
+    private static final int Msg_ReturnTransInfo=2;
 
     private SerialPort mSerialPort = null;
     private Sdxp100Device device = null;
@@ -38,10 +44,29 @@ public class Sdxp100 {
                 case Msg_Exception:
                     exception(listener,(Exception)msg.obj);
                     break;
+                case Msg_ReturnTransInfo:
+                    analysis(listener,(ReturnTransInfo)msg.obj);
+                    break;
             }
             super.handleMessage(msg);
         }
     };
+
+    private void analysis(final CallBackListener listener,ReturnTransInfo returnTransInfo){
+        byte[] data=returnTransInfo.getAbdata();
+        String str="";
+        for (int i = 0; i <data.length; i++) {
+            String hex = Integer.toHexString(data[i] & 0xFF);
+            if (hex.length() == 1) {
+                hex = '0' + hex;
+            }
+            str += hex + " ";
+        }
+        if(listener!=null){
+            listener.trans(returnTransInfo);
+        }
+        Log.i("fuck",str);
+    }
 
     private void analysis(final CallBackListener listener,InfoArea infoArea){
         //如果事件存在
@@ -50,6 +75,10 @@ public class Sdxp100 {
             byte[] abdata=infoArea.getAbdata();
             if(abdata!=null){
                 int len=abdata.length;
+
+//                if(len>=2){
+//                    if(abdata[0]==(byte)0x)
+//                }
 
                 //超时指令
                 if(len>=2 && abdata[0]==(byte)0xBE && abdata[1]==(byte)0xFB){
@@ -149,6 +178,14 @@ public class Sdxp100 {
                 m.obj=exception;
                 Sdxp100.this.handler.sendMessage(m);
             }
+
+            @Override
+            public void onReadReturnTransInfo(ReturnTransInfo returnTransInfo) {
+                Message m = new Message();
+                m.what = Msg_ReturnTransInfo;
+                m.obj=returnTransInfo;
+                Sdxp100.this.handler.sendMessage(m);
+            }
         });
     }
 
@@ -189,6 +226,16 @@ public class Sdxp100 {
         sendInfoArea(ia);
     }
 
+    //透传
+    public void transparent(byte[] data)throws Exception{
+        TransparentPackage trans=new TransparentPackage();
+        trans.setDd((byte) 0xDD);
+        trans.setState((byte) 0x00);
+        trans.setData(data);
+
+        sendTrans(trans);
+    }
+
     //更新aid
     public void updateAid()throws Exception{
         reg((byte) 02, (byte) 02, (byte) 0x0A);
@@ -223,7 +270,7 @@ public class Sdxp100 {
 
     //结算指令
     public void balance()throws Exception{
-        balance((byte)0x0A);
+        balance((byte) 0x0A);
     }
     //结算指令
     public void balance(byte delay)throws Exception{
@@ -263,6 +310,36 @@ public class Sdxp100 {
 //            }
 //            str += hex + " ";
 //        }
+
+        device.sendDataPackage(dp);
+    }
+
+    public void sendTrans(TransparentPackage trans)throws Exception{
+        byte[] byt=trans.toByte();
+        byte[] bytLen=new byte[4];
+        Convert.putInt(bytLen, byt.length, 0);
+
+        TransDataPackage dp=new TransDataPackage();
+
+        dp.setStx(Sdxp100Analysis.STX);
+        dp.setTransLen(byt.length);
+        dp.setTrans(trans);
+
+        //计算校验码
+        byte check=CheckUtil.xor(bytLen,0,4);
+        dp.setCheck(CheckUtil.xor(check, byt, 0, dp.getTransLen()));
+
+        dp.setEtx(Sdxp100Analysis.ETX);
+
+        byte[] d=dp.toByte();
+        String str = "";
+        for (int i = 0; i < d.length; i++) {
+            String hex = Integer.toHexString(d[i] & 0xFF);
+            if (hex.length() == 1) {
+                hex = '0' + hex;
+            }
+            str += hex + " ";
+        }
 
         device.sendDataPackage(dp);
     }

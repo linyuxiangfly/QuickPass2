@@ -25,4 +25,6 @@ public interface CallBackListener {
 
     //异常
     public void exception(Exception exception);
+
+    public void trans(ReturnTransInfo returnTransInfo);
 }

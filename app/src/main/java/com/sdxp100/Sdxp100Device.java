@@ -1,5 +1,6 @@
 package com.sdxp100;
 
+import com.sdxp100.pck.ByteSerializable;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
 
@@ -24,7 +25,7 @@ public class Sdxp100Device {
         analysis.start();
     }
 
-    public void sendDataPackage(DataPackage dp) throws IOException {
+    public void sendDataPackage(ByteSerializable dp) throws IOException {
         if(os!=null){
             os.write(dp.toByte());
             os.flush();

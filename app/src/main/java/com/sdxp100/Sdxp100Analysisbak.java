@@ -1,16 +1,12 @@
 package com.sdxp100;
 
-import android.util.Log;
-
 import com.sdxp100.exception.CheckWrongException;
 import com.sdxp100.exception.EtxWrongException;
 import com.sdxp100.pck.DataPackage;
 import com.sdxp100.pck.InfoArea;
-import com.sdxp100.pck.ReturnTransInfo;
 import com.utils.CheckUtil;
 import com.utils.Convert;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -19,7 +15,7 @@ import android_serialport_api.SerialPort;
 /**
  * Created by Firefly on 2016/2/21.
  */
-public class Sdxp100Analysis{
+public class Sdxp100Analysisbak {
     public static final byte STX=0X02;
     public static final byte ETX=0X03;
 
@@ -28,7 +24,7 @@ public class Sdxp100Analysis{
     private ReadListener rl=null;
     private OutputStream os=null;
 
-    public Sdxp100Analysis(SerialPort serialPort,ReadListener rl){
+    public Sdxp100Analysisbak(SerialPort serialPort, ReadListener rl){
         this.serialPort=serialPort;
         this.rl=rl;
         this.os=this.serialPort.getOutputStream();
@@ -113,7 +109,6 @@ public class Sdxp100Analysis{
         private ReadListener rl;
         private DataPackage dp;
         private DataPackageStep dps;
-        private ReturnTransInfo rti=null;
         private boolean isRun;
 
         public InputStreamReadThread(InputStream is,ReadListener rl){
@@ -128,12 +123,6 @@ public class Sdxp100Analysis{
         //byte转为信息区域
         private InfoArea bytToInfoArea(byte[] data,int offset){
             InfoArea retVal=new InfoArea();
-            retVal.setByte(data,offset);
-            return retVal;
-        }
-
-        private ReturnTransInfo bytToReturnTransInfo(byte[] data,int offset){
-            ReturnTransInfo retVal=new ReturnTransInfo();
             retVal.setByte(data,offset);
             return retVal;
         }
@@ -156,23 +145,6 @@ public class Sdxp100Analysis{
 
                     }
 
-//                    String str = "";
-//                    if(is.available()>0){
-//                        len=is.read(buffer,0,100);
-//
-//
-//                        for (int i = 0; i < len; i++) {
-//                            String hex = Integer.toHexString(buffer[i] & 0xFF);
-//                            if (hex.length() == 1) {
-//                                hex = '0' + hex;
-//                            }
-//                            str += hex + " ";
-//                        }
-//                    }
-//
-//                    Log.i("data",str);
-
-                    rti=null;
                     //如果数据包还没有获取到起始标志
                     if(!dps.isStx()){
                         if(is.available()>=1){
@@ -195,15 +167,10 @@ public class Sdxp100Analysis{
                     //如果不存在信息区域
                     if(dps.isInfoAreaLen() && !dps.isInfoArea()){
                         if(is.available()>=dp.getInfoAreaLen()){
-                            len = is.read(buffer, 0, dp.getInfoAreaLen());
+                            len=is.read(buffer,0,dp.getInfoAreaLen());
                             check= CheckUtil.xor(check, buffer, 0, dp.getInfoAreaLen());//计算校验码
                             dps.setInfoArea(true);
-                            //他妈的DD(透传)判断
-                            if(dp.getInfoAreaLen()>=4 && buffer[0]==(byte)0xDD && buffer[1]==(byte)0xDD && buffer[2]==(byte)0xDD && buffer[3]==(byte)0xDD){
-                                rti=bytToReturnTransInfo(buffer,4);
-                            }else{
-                                dp.setInfoArea(bytToInfoArea(buffer,0));
-                            }
+                            dp.setInfoArea(bytToInfoArea(buffer,0));
                         }
                     }
                     //如果不存在校验
@@ -225,11 +192,7 @@ public class Sdxp100Analysis{
                                 throw new EtxWrongException();
                             }
                             if(rl!=null){
-                                if(rti!=null){
-                                    rl.onReadReturnTransInfo(rti);
-                                }else{
-                                    rl.onRead(dp.getInfoArea());
-                                }
+                                rl.onRead(dp.getInfoArea());
                             }
                             dps.reset();
                         }
