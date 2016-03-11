@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private Button button1 = null;
     private Button button2 = null;
     private Button button3 = null;
+    private Button button4 = null;
     private TextView text1=null;
     private SerialPort mSerialPort = null;
     private Sdxp100 sdxp = null;
@@ -116,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 //            sdxp.checkState();
 //            sdxp.reg();
 //            sdxp.updateAid();
-            sdxp.updatePk();
+//            sdxp.updatePk();
 //            sdxp.balance();
         } catch (Exception e) {
             showInfo(e.getMessage());
@@ -163,6 +165,18 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        button4 = (Button) this.findViewById(R.id.button4);
+        button4.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                try {
+                    sdxp.reg();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -175,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showInfo(String msg) {
+        Log.i("showInfo",msg);
         text1.setText(msg);
     }
 
