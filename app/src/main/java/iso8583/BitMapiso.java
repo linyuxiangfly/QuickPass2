@@ -1,5 +1,7 @@
 package iso8583;
 
+import android.util.Log;
+
 import com.utils.Convert;
 
 import java.util.ArrayList;
@@ -136,11 +138,16 @@ public class BitMapiso {
                     int datLen = 0;
                     if (bm.getBittype() == TYPE_BCD) {
                         datLen = LoUtils.bcdToint(varValue);
-                        //长度取半轩为ASC的长度是根据16进制表示字符的长度，如 A2 B3其实是2个字节，但是datLen是用4来表示
-                        if(datLen%2!=0){
-                            datLen++;
+
+                        //如果数据类型为二进制则长度不除2
+                        if(bm.getDattype()!=TYPE_BIN){
+                            //长度取半轩为ASC的长度是根据16进制表示字符的长度，如 A2 B3其实是2个字节，但是datLen是用4来表示
+                            if(datLen%2!=0){
+                                datLen++;
+                            }
+                            datLen=datLen/2;
                         }
-                        datLen=datLen/2;
+
                     } else {
                         datLen=Convert.getInt(varValue, 0);
                     }
@@ -155,6 +162,9 @@ public class BitMapiso {
                     System.arraycopy(realbody, offset, nextData, 0,nextData.length);
                     offset += bm.getLen();
                 }
+
+//                printByte(bm.getBit()+"",nextData);
+
                 bm.setDat(nextData);
                 outList.add(bm);
             }
@@ -162,6 +172,18 @@ public class BitMapiso {
 
         return outList;
     }
+
+//    public static void printByte(String title,byte[] d){
+//        String str = "";
+//        for (int i = 0; i < d.length; i++) {
+//            String hex = Integer.toHexString(d[i] & 0xFF);
+//            if (hex.length() == 1) {
+//                hex = '0' + hex;
+//            }
+//            str += hex + " ";
+//        }
+//        Log.i(title,str);
+//    }
 //
 //    /**
 //     * 打包响应包,不包括消息类型

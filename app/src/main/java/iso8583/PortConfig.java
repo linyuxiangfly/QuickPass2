@@ -38,7 +38,7 @@ public class PortConfig {
             new BitMap(52,BitMapiso.TYPE_BIN,8,BitMapiso.LEN_TYPE_FIXED),
             new BitMap(53,BitMapiso.TYPE_BCD,8,BitMapiso.LEN_TYPE_FIXED),
             new BitMap(54,BitMapiso.TYPE_BCD,0,BitMapiso.LEN_TYPE_LLLVAR),
-            new BitMap(55,BitMapiso.TYPE_BCD,0,BitMapiso.LEN_TYPE_LLLVAR),
+            new BitMap(55,BitMapiso.TYPE_BCD,0,BitMapiso.LEN_TYPE_LLLVAR,BitMapiso.TYPE_BIN),
             new BitMap(58,BitMapiso.TYPE_ASC,0,BitMapiso.LEN_TYPE_LLLVAR),
             new BitMap(60,BitMapiso.TYPE_BCD,0,BitMapiso.LEN_TYPE_LLLVAR),
             new BitMap(61,BitMapiso.TYPE_BCD,0,BitMapiso.LEN_TYPE_LLLVAR),

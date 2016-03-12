@@ -37,9 +37,13 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import android_serialport_api.SerialPort;
+import iso8583.BitMap;
+import iso8583.BitMapiso;
+import iso8583.PortConfig;
 
 public class MainActivity extends AppCompatActivity {
     private static SimpleDateFormat formatDate = new SimpleDateFormat("yyMMdd");
@@ -265,6 +269,16 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
+//                String str="60 00 02 00 00 60 31 00 31 11 0e 02 00 70 20 06 80 00 c0 82 11 16 62 25 97 00 34 51 44 71 00 00 00 00 00 00 00 00 01 00 01 09 07 20 00 01 00 35 31 34 33 35 37 39 30 34 32 35 34 34 31 39 35 34 31 31 30 31 33 35 31 35 36 01 32 5f 2a 02 01 56 82 02 7c 00 8a 02 5a 31 95 05 00 00 00 00 00 9a 03 16 03 13 9c 01 00 9f 02 06 00 00 00 00 00 01 9f 03 06 00 00 00 00 00 00 9f 10 16 07 01 01 03 a0 00 00 01 0d 07 01 00 00 00 00 00 80 b0 d0 3a 41 29 9f 1a 02 01 56 9f 26 08 72 c6 69 99 ae a4 13 f4 9f 27 01 80 9f 33 03 00 00 c0 9f 35 01 36 9f 36 02 00 0a 9f 37 04 5d 03 04 5e 9f 63 10 30 31 30 32 30 30 30 30 00 80 b0 00 00 00 00 00 00 13 36 00 00 10 00 06 00 36 41 36 38 33 31 36 38 ";
+//                str=str.replace(" ", "");
+//
+//                byte[] byt=StringUtil.hexStr2Bytes(str);
+//
+//                List<BitMap> list= BitMapiso.unpackRequest(byt, PortConfig.config);
+//                for (BitMap bitMap:list){
+//                    byte[] b=bitMap.getDat();
+//                    Log.i("unpackRequest",bitMap.getBit()+ "		"+StringUtil.byte2HexStr(b));
+//                }
                 try {
                     sdxp.balance();
                 } catch (Exception e) {
