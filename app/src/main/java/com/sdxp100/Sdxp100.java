@@ -18,15 +18,26 @@ import com.sdxp100.pck.TransDataPackage;
 import com.sdxp100.pck.TransparentPackage;
 import com.utils.CheckUtil;
 import com.utils.Convert;
+import com.utils.StringUtil;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import android_serialport_api.SerialPort;
+import iso8583.BitMap;
+import iso8583.BitMapiso;
+import iso8583.PortConfig;
+import tools.ByteUtil;
 
 /**
  * Created by Firefly on 2016/2/27.
  */
 public class Sdxp100 {
+    private SimpleDateFormat sdfTime =   new SimpleDateFormat( "HHmmss");
+    private SimpleDateFormat sdfDate =   new SimpleDateFormat( "MMdd" );
+    private SimpleDateFormat sdfDateYear =   new SimpleDateFormat( "yyMM" );
+
     private static final int Msg_InfoArea=0;
     private static final int Msg_Exception=1;
     private static final int Msg_ReturnTransInfo=2;
@@ -99,16 +110,79 @@ public class Sdxp100 {
                             if(len>=6+l+2){
                                 //复制数据到数组
                                 //###############################待解释数据##########################################################
+                                l=l-2;//去掉有效前面的两个字节
                                 byte[] d=new byte[l];
                                 for (int i=0;i<l;i++){
-                                    d[i]=abdata[6+i];
+                                    d[i]=abdata[6+2+i];//偏移去掉前面的两个字节
                                 }
 
                                 //交易成功的返回状态  若交易异常则返回其他的状态
                                 short s=Convert.getShort(abdata,6+l);
 
+                                printByte("analysis", d);
+
                                 //把返回数据封装成对象
                                 PayResultPackage payResultPackage=new PayResultPackage();
+
+                                List<BitMap> list=BitMapiso.unpackRequest(d, PortConfig.config);
+                                for (BitMap bitMap:list){
+                                    switch (bitMap.getBit()){
+                                        case 2://卡号
+                                            payResultPackage.setCard(StringUtil.byte2HexStr(bitMap.getDat()));
+                                            break;
+                                        case 4://消费金额
+                                            String moneyStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                            payResultPackage.setMoney(Integer.parseInt(moneyStr));
+                                            break;
+                                        case 11://交易流水，定长3
+                                            payResultPackage.setIndex(StringUtil.byte2HexStr(bitMap.getDat()));
+                                            break;
+                                        case 12://受卡方所在地时间，定长3
+                                            try{
+                                                String deviceTimeStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                                Date deviceTime = sdfTime.parse(deviceTimeStr);
+                                                payResultPackage.setDeviceTime(deviceTime);
+                                            }catch (Exception e){
+
+                                            }
+                                            break;
+                                        case 13://受卡方所在日期，定长2
+                                            try{
+                                                String deviceDateStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                                Date deviceDate = sdfDate.parse(deviceDateStr);
+                                                payResultPackage.setDeviceDate(deviceDate);
+                                            }catch (Exception e){
+
+                                            }
+                                            break;
+                                        case 14://卡有效期，定长2
+                                            try{
+                                                String expDateStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                                Date expDate = sdfDateYear.parse(expDateStr);
+                                                payResultPackage.setExpDate(expDate);
+                                            }catch (Exception e){
+
+                                            }
+                                            break;
+                                        case 15://清算日期，定长2
+                                            try{
+                                                String clearDateStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                                Date clearDate = sdfDate.parse(clearDateStr);
+                                                payResultPackage.setClearDate(clearDate);
+                                            }catch (Exception e){
+
+                                            }
+                                            break;
+                                        case 49://币种
+                                            String currencyStr=new String(bitMap.getDat());
+                                            payResultPackage.setCurrency(currencyStr);
+                                            break;
+                                        case 54://余额
+                                            String balanceStr=StringUtil.byte2HexStr(bitMap.getDat());
+                                            payResultPackage.setBalance(Integer.parseInt(balanceStr));
+                                            break;
+                                    }
+                                }
                                 //#########################################################################################
                                 //交易成功
                                 listener.pay(payResultPackage);
@@ -296,20 +370,12 @@ public class Sdxp100 {
         dp.setInfoArea(ia);
 
         //计算校验码
-        byte check=CheckUtil.xor(bytLen,0,4);
+        byte check=CheckUtil.xor(bytLen, 0, 4);
         dp.setCheck(CheckUtil.xor(check, byt, 0, dp.getInfoAreaLen()));
 
         dp.setEtx(Sdxp100Analysis.ETX);
 
-//        byte[] d=dp.toByte();
-//        String str = "";
-//        for (int i = 0; i < d.length; i++) {
-//            String hex = Integer.toHexString(d[i] & 0xFF);
-//            if (hex.length() == 1) {
-//                hex = '0' + hex;
-//            }
-//            str += hex + " ";
-//        }
+//        printByte("sendInfoArea", dp.toByte());
 
         device.sendDataPackage(dp);
     }
@@ -331,7 +397,12 @@ public class Sdxp100 {
 
         dp.setEtx(Sdxp100Analysis.ETX);
 
-        byte[] d=dp.toByte();
+        printByte("sendTrans",dp.toByte());
+
+        device.sendDataPackage(dp);
+    }
+
+    public void printByte(String title,byte[] d){
         String str = "";
         for (int i = 0; i < d.length; i++) {
             String hex = Integer.toHexString(d[i] & 0xFF);
@@ -340,7 +411,6 @@ public class Sdxp100 {
             }
             str += hex + " ";
         }
-
-        device.sendDataPackage(dp);
+        Log.i(title,str);
     }
 }

@@ -25,4 +25,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.2.0'
     compile 'com.android.support:design:23.2.0'
     compile files('src/main/libs/sun.misc.BASE64Decoder.jar')
+    compile files('src/main/libs/j8583-1.11.0.jar')
 }

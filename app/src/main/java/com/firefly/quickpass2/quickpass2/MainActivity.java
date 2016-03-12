@@ -130,7 +130,10 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void pay(PayResultPackage payResultPackage) {
-                    showInfo("卡号:"+payResultPackage.getCard()+",金额:"+payResultPackage.getMoney());
+                    showInfo("卡号:"+payResultPackage.getCard()+
+                            ",金额:"+payResultPackage.getMoney()+
+                            ",余额:"+payResultPackage.getBalance()+
+                            ",币种:"+payResultPackage.getCurrency());
                 }
 
                 @Override
